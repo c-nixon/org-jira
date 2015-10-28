@@ -510,7 +510,7 @@ See`org-jira-get-issue-list'"
          (comment-id (org-jira-get-from-org 'comment 'id))
          (comment (replace-regexp-in-string "^  " "" (org-jira-get-comment-body comment-id))))
     (if comment-id
-        (jiralib-edit-comment comment-id comment)
+        (jiralib-edit-comment issue-id comment-id comment)
       (jiralib-add-comment issue-id comment)
       (org-jira-delete-current-comment)
       (org-jira-update-comments-for-current-issue))))

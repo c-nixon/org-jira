@@ -70,9 +70,8 @@
         (delete-region (point-min) (min (1+ (point)) (point-max))))
       (json-read-from-string (buffer-string)))))
 
-
-(defun jiralib-put (resource &optional rest-args limit &rest args)
-  (let ((url-request-method "PUT")
+(defun jiralib--put-post (method resource &optional rest-args limit &rest args)
+  (let ((url-request-method method)
         (url-request-extra-headers
          `(("Content-Type" . "application/json")
            ("Authorization" . ,(concat "Basic "
@@ -80,6 +79,12 @@
                                         (concat jira-user ":" jira-pass))))))
         (url-request-data (json-encode rest-args)))
     (url-retrieve-synchronously (concat jira-rest-url resource))))
+
+(defun jiralib-post (resource &optional rest-args limit &rest args)
+  (jiralib--put-post "POST" resource rest-args limit args))
+
+(defun jiralib-put (resource &optional rest-args limit &rest args)
+  (jiralib--put-post "PUT" resource rest-args limit args))
 
 ;;; Code:
 (defgroup jiralib nil
@@ -584,12 +589,13 @@ Return nil if the field is not found"
 
 (defun jiralib-add-comment (issue-key comment)
   "Add to issue with ISSUE-KEY the given COMMENT."
-  (jiralib-call "addComment" issue-key `((body . ,comment))))
+  (jiralib-post (concat "issue/" issue-key "/comment")
+                `((body . ,comment))))
 
-(defun jiralib-edit-comment (comment-id comment)
+(defun jiralib-edit-comment (issue-key comment-id comment)
   "Edit comment with COMMENT-ID to reflect the new COMMENT."
-  (jiralib-call "editComment" `((id . ,comment-id)
-                                (body . ,comment))))
+  (jiralib-put (concat "issue/" issue-key "/comment/" comment-id)
+               `((body . ,comment))))
 
 (defun jiralib-create-issue (issue)
   "Create a new ISSUE in JIRALIB.
