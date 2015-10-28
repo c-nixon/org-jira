@@ -293,7 +293,7 @@ Entry to this mode calls the value of `org-jira-mode-hook'."
                       (org-narrow-to-subtree))
                     (org-entry-put (point) "name" (cdr (assoc 'name proj)))
                     (org-entry-put (point) "key" (cdr (assoc 'key proj)))
-                    (org-entry-put (point) "lead" (cdr (assoc 'lead proj)))
+                    (org-entry-put (point) "lead" (cdr (assoc 'key (assoc 'lead proj))))
                     (org-entry-put (point) "ID" (cdr (assoc 'id proj)))
                     (org-entry-put (point) "url" (cdr (assoc 'url proj))))))
               oj-projs)))))
@@ -302,7 +302,7 @@ Entry to this mode calls the value of `org-jira-mode-hook'."
   "Return the components the ISSUE belongs to."
   (mapconcat (lambda (comp)
                (cdr (assoc 'name comp)))
-             (cdr (assoc 'components issue)) ", "))
+             (append (cdr (assoc 'components issue)) nil) ", "))
 
 (defun org-jira-transform-time-format (jira-time-str)
   "Convert JIRA-TIME-STR to format \"%Y-%m-%d %T\".
@@ -347,14 +347,10 @@ Example: \"2012-01-09T08:59:15.000Z\" becomes \"2012-01-09
            (org-jira-get-issue-components issue))
           ((member key '(created updated startDate))
            (org-jira-transform-time-format tmp))
-          ((eq key 'status)
-           (cdr (assoc tmp (jiralib-get-statuses))))
-          ((eq key 'resolution)
-           (cdr (assoc tmp (jiralib-get-resolutions))))
-          ((eq key 'type)
-           (cdr (assoc tmp (jiralib-get-issue-types))))
-          ((eq key 'priority)
-           (cdr (assoc tmp (jiralib-get-priorities))))
+          ((or (eq key 'assignee) (eq key 'reporter)
+               (eq key 'issuetype) (eq key 'priority)
+               (eq key 'status) (eq key 'resolution))
+           (cdr (assoc 'name (assoc key issue))))
           ((eq key 'description)
            (org-jira-strip-string tmp))
           (t
@@ -375,7 +371,7 @@ jql."
                                "assignee = currentUser() and resolution = unresolved")
                              'org-jira-jql-history
                              "assignee = currentUser() and resolution = unresolved")))
-    (list (jiralib-do-jql-search jql))))
+    (list (assoc 'issues (jiralib-do-jql-search jql)))))
 
 (defun org-jira-get-issue-by-id (id)
   "Get an issue by its ID."
@@ -428,9 +424,10 @@ See`org-jira-get-issue-list'"
    (org-jira-get-issue-list))
   (let (project-buffer)
     (mapc (lambda (issue)
-            (let* ((proj-key (cdr (assoc 'project issue)))
+            (let* ((fields (cdr(assoc 'fields issue)))
+                   (proj-key (cdr (assoc 'key (assoc 'project fields))))
                    (issue-id (cdr (assoc 'key issue)))
-                   (issue-summary (cdr (assoc 'summary issue)))
+                   (issue-summary (cdr (assoc 'summary fields)))
                    (issue-headline issue-summary))
               (let ((project-file (expand-file-name (concat proj-key ".org") org-jira-working-dir)))
                 (setq project-buffer (or (find-buffer-visiting project-file)
@@ -452,7 +449,7 @@ See`org-jira-get-issue-list'"
                       (unless (looking-at "^")
                         (insert "\n"))
                       (insert "* "))
-                    (let ((status (org-jira-get-issue-val 'status issue)))
+                    (let ((status (org-jira-get-issue-val 'status fields)))
                       (insert (concat (cond (org-jira-use-status-as-todo
                                              (upcase (replace-regexp-in-string " " "-" status)))
                                             ((member status org-jira-done-states) "DONE")
@@ -471,11 +468,11 @@ See`org-jira-get-issue-list'"
                      nil)
 
                     (mapc (lambda (entry)
-                            (let ((val (org-jira-get-issue-val entry issue)))
+                            (let ((val (org-jira-get-issue-val entry fields)))
                               (when (and val (not (string= val "")))
                                 (org-entry-put (point) (symbol-name entry) val))))
-                          '(assignee reporter type priority resolution status components created updated))
-                    (org-entry-put (point) "ID" (cdr (assoc 'key issue)))
+                          '(assignee reporter issuetype priority resolution status components created updated))
+                    (org-entry-put (point) "ID" issue-id)
 
                     (mapc (lambda (heading-entry)
                             (ensure-on-issue-id
@@ -496,12 +493,12 @@ See`org-jira-get-issue-list'"
                                     (org-insert-subheading t))
                                   (insert entry-heading "\n"))
 
-                                (insert (replace-regexp-in-string "^" "  " (org-jira-get-issue-val heading-entry issue))))))
+                                (insert (replace-regexp-in-string "^" "  " (org-jira-get-issue-val heading-entry fields))))))
                           '(description))
                     (org-jira-update-comments-for-current-issue)
                     (org-jira-update-worklogs-for-current-issue)
                     )))))
-          issues)
+          (cdr issues))
     (switch-to-buffer project-buffer)))
 
 ;;;###autoload
@@ -890,7 +887,7 @@ See`org-jira-get-issue-list'"
            (org-issue-description (replace-regexp-in-string "^  " "" (org-jira-get-issue-val-from-org 'description)))
            (org-issue-resolution (org-jira-get-issue-val-from-org 'resolution))
            (org-issue-priority (org-jira-get-issue-val-from-org 'priority))
-           (org-issue-type (org-jira-get-issue-val-from-org 'type))
+           (org-issue-type (org-jira-get-issue-val-from-org 'issuetype))
            (org-issue-assignee (org-jira-get-issue-val-from-org 'assignee))
            (org-issue-status (org-jira-get-issue-val-from-org 'status))
            (issue (jiralib-get-issue issue-id))
