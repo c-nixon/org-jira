@@ -45,6 +45,31 @@
 (require 'soap-client)
 (require 'url-parse)
 
+(defvar jira-user "")
+(defvar jira-pass "")
+(defvar jira-rest-url "")
+
+(defun jira-get (resource &optional rest-args limit &rest args)
+  (let ((url-request-method "GET")
+        (url-request-extra-headers
+         `(("Content-Type" . "application/json")
+           ("Authorization" . ,(concat "Basic "
+                                       (base64-encode-string
+                                        (concat jira-user ":" jira-pass))))))
+        (url-request-data
+         (concat "?" (mapconcat (lambda (arg)
+                                  (concat (url-hexify-string (car arg))
+                                          "="
+                                          (url-hexify-string (cdr arg))))
+                                rest-args
+                                "&"))))
+    (with-current-buffer
+        (url-retrieve-synchronously (concat jira-rest-url resource url-request-data))
+      (goto-char (point-min))
+      (when (re-search-forward "^$" nil t)
+        (delete-region (point-min) (min (1+ (point)) (point-max))))
+      (json-read-from-string (buffer-string)))))
+
 ;;; Code:
 (defgroup jiralib nil
   "Jiralib customization group."
