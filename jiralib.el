@@ -619,7 +619,7 @@ will cache it."
 
 (defun jiralib-get-issue (issue-key)
   "Get the issue with key ISSUE-KEY."
-  (jira-get (concat "issue/" issue-key)))
+  (jira-get (concat "issue/" issue-key) '(("fields" . "*all"))))
 
 (defun jiralib-get-issues-from-filter (filter-id)
   "Get the issues from applying saved filter FILTER-ID."
