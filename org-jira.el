@@ -569,9 +569,9 @@ See`org-jira-get-issue-list'"
             (ensure-on-issue-id issue-id
               (let* ((comment-id (cdr (assoc 'id comment)))
                      (comment-author (or (car (rassoc
-                                               (cdr (assoc 'author comment))
+                                               (cdr (assoc 'name (assoc 'author comment)))
                                                jira-users))
-                                         (cdr (assoc 'author comment))))
+                                         (cdr (assoc 'name (assoc 'author comment)))))
                      (comment-headline (format "Comment: %s" comment-author)))
                 (setq p (org-find-entry-with-id comment-id))
                 (when (and p (>= p (point-min))
@@ -593,10 +593,10 @@ See`org-jira-get-issue-list'"
                     (org-entry-put (point) "updated" updated)))
                 (goto-char (point-max))
                 (insert (replace-regexp-in-string "^" "  " (or (cdr (assoc 'body comment)) ""))))))
-          (cl-mapcan (lambda (comment) (if (string= (cdr (assoc 'author comment))
-                                               "admin")
-                                      nil
-                                    (list comment)))
+          (cl-mapcan (lambda (comment) (if (string= (cdr (assoc 'name (assoc 'author comment)))
+                                                    "admin")
+                                           nil
+                                         (list comment)))
                      comments))))
 
 (defun org-jira-update-worklogs-for-current-issue ()
