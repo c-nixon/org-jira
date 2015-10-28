@@ -615,7 +615,8 @@ will cache it."
 
 (defun jiralib-get-components (project-key)
   "Return all components available in the project PROJECT-KEY."
-  (jiralib-make-assoc-list (jiralib-call "getComponents" project-key) 'id 'name))
+  (let ((components (jira-get (concat "project/" project-key "/components"))))
+    (append components nil)))
 
 (defun jiralib-get-issue (issue-key)
   "Get the issue with key ISSUE-KEY."
