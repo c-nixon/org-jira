@@ -1,3 +1,26 @@
+* THIS IS AN EXPERIMENTAL PORT TO THE JIRA REST API
+
+* IT'S LIKELY TO DO SOMETHING PROFOUNDLY STUPID AND IRREVERSIBLE TO YOUR DATA.
+
+With that out of the way:
+
+This fork aims to add support for the still-supported Jira REST api.
+
+What currently works:
+  - Retrieving projects, issues and comments
+
+What doesn't yet work:
+  - Everything else.
+
+
+I've never written any substantial emacs lisp before so contributions are very
+welcome!
+
+
+
+
+
+
 * org-jira mode
 
 Use [[http://www.atlassian.com/software/jira/overview/][Jira]] in Emacs org-mode.
