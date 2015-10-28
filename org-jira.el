@@ -893,8 +893,8 @@ See`org-jira-get-issue-list'"
            (org-issue-type (org-jira-get-issue-val-from-org 'issuetype))
            (org-issue-assignee (org-jira-get-issue-val-from-org 'assignee))
            (org-issue-status (org-jira-get-issue-val-from-org 'status))
-           (issue (jiralib-get-issue issue-id))
-           (project (org-jira-get-issue-val 'project issue))
+           (fields (assoc 'fields (jiralib-get-issue issue-id)))
+           (project (org-jira-get-issue-val 'project fields))
            (project-components (jiralib-get-components project)))
 
       (jiralib-update-issue issue-id ; (jiralib-update-issue "FB-1" '((components . ["10001" "10000"])))

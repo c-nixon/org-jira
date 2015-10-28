@@ -70,6 +70,17 @@
         (delete-region (point-min) (min (1+ (point)) (point-max))))
       (json-read-from-string (buffer-string)))))
 
+
+(defun jiralib-put (resource &optional rest-args limit &rest args)
+  (let ((url-request-method "PUT")
+        (url-request-extra-headers
+         `(("Content-Type" . "application/json")
+           ("Authorization" . ,(concat "Basic "
+                                       (base64-encode-string
+                                        (concat jira-user ":" jira-pass))))))
+        (url-request-data (json-encode rest-args)))
+    (url-retrieve-synchronously (concat jira-rest-url resource))))
+
 ;;; Code:
 (defgroup jiralib nil
   "Jiralib customization group."
@@ -296,25 +307,33 @@ emacs-lisp"
     ;; we accept an ALIST of field-name field-values parameter, but we need to
     ;; construct a structure that encodes as a RemoteFieldValue which is what
     ;; updateIssue wants
-    (dolist (field fields)
-      (let ((name (car field))
-            (value (cdr field)))
-        (when (symbolp name)
-          (setq name (symbol-name name)))
-        ;; Value must be an "array" (for which soap-client accepts lists) even
-        ;; if it is just one value
-        (unless (vectorp value)
-          (setq value (vector value)))
-        (push `((id . ,name) (values . ,value))
-              remote-field-values)))
 
-    (apply 'vector (nreverse remote-field-values))))
-
-;;;; Wrappers around JIRA methods
+    ((lambda ()
+       `(("fields" .
+          ,(mapcar
+            (lambda (field)
+              (let ((name (car field))
+                    (value (cdr field)))
+                ;; Return must be a ALIST of field names with the field name as key
+                ;; The value must be a value, ALIST or list depending on the field
+                (cond ((member name '(assignee reporter))
+                       `(,name . (("name" . ,value))))
+                      ((member name '(issuetype priority status resolution))
+                       `(,name . (("id" . ,value))))
+                      ((member name '(description summary))
+                       `(,name . ,value))
+                      ((member name '(components))
+                       `(,name . ,(mapcar
+                                   (lambda (val)
+                                     `(("id" . ,val)))
+                                   value)))
+                      (t (error "Called on %s" name)))))
+            fields)))))))
+
 
 (defun jiralib-update-issue (key fields)
   "Update the issue with id KEY with the values in FIELDS."
-  (jiralib-call "updateIssue" key (jiralib-make-remote-field-values fields)))
+  (jiralib-put (concat "issue/" key) (jiralib-make-remote-field-values fields)))
 
 
 (defvar jiralib-status-codes-cache nil)
@@ -354,7 +373,8 @@ This function will only ask JIRA for the list of codes once, than
 will cache it."
   (unless jiralib-priority-codes-cache
     (setq jiralib-priority-codes-cache
-          (jiralib-make-assoc-list (jiralib-call "getPriorities") 'id 'name)))
+          (jiralib-make-assoc-list
+           (append (jira-get "priority") nil) 'id 'name)))
   jiralib-priority-codes-cache)
 
 (defvar jiralib-resolution-code-cache nil)
@@ -615,8 +635,12 @@ will cache it."
 
 (defun jiralib-get-components (project-key)
   "Return all components available in the project PROJECT-KEY."
+
   (let ((components (jira-get (concat "project/" project-key "/components"))))
-    (append components nil)))
+    (mapcar (lambda (component)
+              (cons (cdr (assoc 'id component))
+                    (cdr (assoc 'name component))))
+            components)))
 
 (defun jiralib-get-issue (issue-key)
   "Get the issue with key ISSUE-KEY."
