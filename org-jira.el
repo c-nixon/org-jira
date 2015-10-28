@@ -348,8 +348,10 @@ Example: \"2012-01-09T08:59:15.000Z\" becomes \"2012-01-09
           ((member key '(created updated started))
            (org-jira-transform-time-format tmp))
           ((member key '(assignee reporter issuetype priority
-                                  status resolution project))
+                                  status resolution))
            (cdr (assoc 'name (assoc key issue))))
+          ((eq key 'project)
+           (cdr (assoc 'key (assoc key issue))))
           ((eq key 'description)
            (org-jira-strip-string tmp))
           (t
