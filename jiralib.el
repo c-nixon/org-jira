@@ -327,7 +327,8 @@ This function will only ask JIRA for the list of codes once, then
 will cache it."
   (unless jiralib-status-codes-cache
     (setq jiralib-status-codes-cache
-          (jiralib-make-assoc-list (jiralib-call "getStatuses") 'id 'name)))
+          (jiralib-make-assoc-list
+           (append (jira-get "status") nil) 'id 'name)))
   jiralib-status-codes-cache)
 
 (defvar jiralib-issue-types-cache nil)
@@ -386,8 +387,10 @@ database.  An issue is assumed to be in the format KEY-NUMBER,
 where KEY is a project key and NUMBER is the issue number."
   (unless jiralib-issue-regexp
     (let ((projects (mapcar (lambda (e) (downcase (cdr (assoc 'key e))))
-                            (jiralib-call "getProjectsNoSchemes"))))
-      (setq jiralib-issue-regexp (concat "\\<" (regexp-opt projects) "-[0-9]+\\>"))))
+                            (jira-get "project"))))
+      (setq jiralib-issue-regexp (concat "\\<"
+                                         (regexp-opt projects)
+                                         "-[0-9]+\\>"))))
   jiralib-issue-regexp)
 
 (defun jiralib-do-jql-search (jql &optional limit)
@@ -398,7 +401,9 @@ might not be possible to find *ALL* the issues that match a
 query."
   (unless (or limit (numberp limit))
     (setq limit 100))
-  (jiralib-call "getIssuesFromJqlSearch" jql limit))
+  (jira-get "search" `(("jql" . ,jql)
+                       ("fields" . "*all")) limit))
+
 
 (defun jiralib-get-available-actions (issue-key)
   "Return the available workflow actions for ISSUE-KEY.
@@ -595,7 +600,9 @@ will cache it."
 
 (defun jiralib-get-comments (issue-key)
   "Return all comments associated with issue ISSUE-KEY."
-  (jiralib-call "getComments" issue-key))
+  (let ((comments (jira-get (concat "issue/" issue-key "/comment"))))
+    (append (cdr (assoc 'comments comments))  nil)))
+
 
 (defun jiralib-get-worklogs (issue-key)
   "Return all worklogs associated with issue ISSUE-KEY."
@@ -611,7 +618,7 @@ will cache it."
 
 (defun jiralib-get-issue (issue-key)
   "Get the issue with key ISSUE-KEY."
-  (jiralib-call "getIssue" issue-key))
+  (jira-get (concat "issue/" issue-key)))
 
 (defun jiralib-get-issues-from-filter (filter-id)
   "Get the issues from applying saved filter FILTER-ID."
@@ -632,9 +639,8 @@ Return no more than MAX-NUM-RESULTS."
 ;; Modified by Brian Zwahr to use getProjectsNoSchemes instead of getProjects
 (defun jiralib-get-projects ()
   "Return a list of projects available to the user."
-  (if jiralib-projects-list
-      jiralib-projects-list
-    (setq jiralib-projects-list (jiralib-call "getProjectsNoSchemes"))))
+  (setq jiralib-projects-list
+        (jira-get "project" '(("expand" . "url,lead")))))
 
 (defun jiralib-get-saved-filters ()
   "Get all saved filters available for the currently logged in user."
