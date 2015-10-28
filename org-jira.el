@@ -345,11 +345,10 @@ Example: \"2012-01-09T08:59:15.000Z\" becomes \"2012-01-09
   (let ((tmp  (or (cdr (assoc key issue)) "")))
     (cond ((eq key 'components)
            (org-jira-get-issue-components issue))
-          ((member key '(created updated startDate))
+          ((member key '(created updated started))
            (org-jira-transform-time-format tmp))
-          ((or (eq key 'assignee) (eq key 'reporter)
-               (eq key 'issuetype) (eq key 'priority)
-               (eq key 'status) (eq key 'resolution))
+          ((member key '(assignee reporter issuetype priority
+                                  status resolution project))
            (cdr (assoc 'name (assoc key issue))))
           ((eq key 'description)
            (org-jira-strip-string tmp))
@@ -608,9 +607,11 @@ See`org-jira-get-issue-list'"
             (ensure-on-issue-id issue-id
               (let* ((worklog-id (concat "worklog-" (cdr (assoc 'id worklog))))
                      (worklog-author (or (car (rassoc
-                                               (cdr (assoc 'author worklog))
+                                               (cdr (assoc 'name
+                                                           (assoc 'author worklog)))
                                                jira-users))
-                                         (cdr (assoc 'author worklog))))
+                                         (cdr (assoc 'name
+                                                     (assoc 'author worklog)))))
                      (worklog-headline (format "Worklog: %s" worklog-author)))
                 (setq p (org-find-entry-with-id worklog-id))
                 (when (and p (>= p (point-min))

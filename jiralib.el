@@ -606,7 +606,8 @@ will cache it."
 
 (defun jiralib-get-worklogs (issue-key)
   "Return all worklogs associated with issue ISSUE-KEY."
-  (jiralib-call "getWorklogs" issue-key))
+  (let ((worklogs (jira-get (concat "issue/" issue-key "/worklog"))))
+    (append (cdr (assoc 'worklogs worklogs))  nil)))
 
 (defun jiralib-update-worklog (worklog)
   "Update the WORKLOG, updating the ETA for the related issue."
