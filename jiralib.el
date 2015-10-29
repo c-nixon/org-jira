@@ -45,11 +45,11 @@
 (require 'soap-client)
 (require 'url-parse)
 
-(defvar jira-user "")
-(defvar jira-pass "")
-(defvar jira-rest-url "")
+(defvar jira-user "***REMOVED***")
+(defvar jira-pass "***REMOVED***")
+(defvar jira-rest-url "https://***REMOVED***.atlassian.net/rest/api/2/")
 
-(defun jira-get (resource &optional rest-args limit &rest args)
+(defun jiralib-get (resource &optional rest-args limit &rest args)
   (let ((url-request-method "GET")
         (url-request-extra-headers
          `(("Content-Type" . "application/json")
@@ -352,7 +352,7 @@ will cache it."
   (unless jiralib-status-codes-cache
     (setq jiralib-status-codes-cache
           (jiralib-make-assoc-list
-           (append (jira-get "status") nil) 'id 'name)))
+           (append (jiralib-get "status") nil) 'id 'name)))
   jiralib-status-codes-cache)
 
 (defvar jiralib-issue-types-cache nil)
@@ -379,7 +379,7 @@ will cache it."
   (unless jiralib-priority-codes-cache
     (setq jiralib-priority-codes-cache
           (jiralib-make-assoc-list
-           (append (jira-get "priority") nil) 'id 'name)))
+           (append (jiralib-get "priority") nil) 'id 'name)))
   jiralib-priority-codes-cache)
 
 (defvar jiralib-resolution-code-cache nil)
@@ -412,7 +412,7 @@ database.  An issue is assumed to be in the format KEY-NUMBER,
 where KEY is a project key and NUMBER is the issue number."
   (unless jiralib-issue-regexp
     (let ((projects (mapcar (lambda (e) (downcase (cdr (assoc 'key e))))
-                            (jira-get "project"))))
+                            (jiralib-get "project"))))
       (setq jiralib-issue-regexp (concat "\\<"
                                          (regexp-opt projects)
                                          "-[0-9]+\\>"))))
@@ -426,8 +426,8 @@ might not be possible to find *ALL* the issues that match a
 query."
   (unless (or limit (numberp limit))
     (setq limit 100))
-  (jira-get "search" `(("jql" . ,jql)
-                       ("fields" . "*all")) limit))
+  (jiralib-get "search" `(("jql" . ,jql)
+                          ("fields" . "*all")) limit))
 
 
 (defun jiralib-get-available-actions (issue-key)
@@ -626,13 +626,13 @@ will cache it."
 
 (defun jiralib-get-comments (issue-key)
   "Return all comments associated with issue ISSUE-KEY."
-  (let ((comments (jira-get (concat "issue/" issue-key "/comment"))))
+  (let ((comments (jiralib-get (concat "issue/" issue-key "/comment"))))
     (append (cdr (assoc 'comments comments))  nil)))
 
 
 (defun jiralib-get-worklogs (issue-key)
   "Return all worklogs associated with issue ISSUE-KEY."
-  (let ((worklogs (jira-get (concat "issue/" issue-key "/worklog"))))
+  (let ((worklogs (jiralib-get (concat "issue/" issue-key "/worklog"))))
     (append (cdr (assoc 'worklogs worklogs))  nil)))
 
 (defun jiralib-update-worklog (worklog)
@@ -642,7 +642,7 @@ will cache it."
 (defun jiralib-get-components (project-key)
   "Return all components available in the project PROJECT-KEY."
 
-  (let ((components (jira-get (concat "project/" project-key "/components"))))
+  (let ((components (jiralib-get (concat "project/" project-key "/components"))))
     (mapcar (lambda (component)
               (cons (cdr (assoc 'id component))
                     (cdr (assoc 'name component))))
@@ -650,7 +650,7 @@ will cache it."
 
 (defun jiralib-get-issue (issue-key)
   "Get the issue with key ISSUE-KEY."
-  (jira-get (concat "issue/" issue-key) '(("fields" . "*all"))))
+  (jiralib-get (concat "issue/" issue-key) '(("fields" . "*all"))))
 
 (defun jiralib-get-issues-from-filter (filter-id)
   "Get the issues from applying saved filter FILTER-ID."
@@ -672,7 +672,7 @@ Return no more than MAX-NUM-RESULTS."
 (defun jiralib-get-projects ()
   "Return a list of projects available to the user."
   (setq jiralib-projects-list
-        (jira-get "project" '(("expand" . "url,lead")))))
+        (jiralib-get "project" '(("expand" . "url,lead")))))
 
 (defun jiralib-get-saved-filters ()
   "Get all saved filters available for the currently logged in user."
