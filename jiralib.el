@@ -459,9 +459,8 @@ TIME-SPENT can be in one of the following formats: 10m, 120m
 hours; 10h, 120h days; 10d, 120d weeks.
 
 COMMENT will be added to this worklog."
-  (jiralib-call "addWorklogAndAutoAdjustRemainingEstimate"
-                issue-key
-                `((startDate . ,start-date)
+  (jiralib-post (concat "issue/" issue-key "/worklog")
+                `((started   . ,start-date)
                   (timeSpent . ,time-spent)
                   (comment   . ,comment))))
 
@@ -635,9 +634,9 @@ will cache it."
   (let ((worklogs (jiralib-get (concat "issue/" issue-key "/worklog"))))
     (append (cdr (assoc 'worklogs worklogs))  nil)))
 
-(defun jiralib-update-worklog (worklog)
+(defun jiralib-update-worklog (issue-id worklog-id worklog)
   "Update the WORKLOG, updating the ETA for the related issue."
-  (jiralib-call "updateWorklogAndAutoAdjustRemainingEstimate" worklog))
+  (jiralib-put (concat "issue/" issue-id "/worklog/" worklog-id) worklog))
 
 (defun jiralib-get-components (project-key)
   "Return all components available in the project PROJECT-KEY."

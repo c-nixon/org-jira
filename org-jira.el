@@ -327,7 +327,7 @@ Example: \"2012-01-09T08:59:15.000Z\" becomes \"2012-01-09
 (defun org-jira-time-format-to-jira (org-time-str)
   "Convert ORG-TIME-STR back to jira time format."
   (condition-case ()
-      (format-time-string "%Y-%m-%dT%T.000Z"
+      (format-time-string "%Y-%m-%dT%T.000+0000"
                           (apply 'encode-time
                                  (org-jira--fix-encode-time-args (parse-time-string org-time-str))) t)
     (error org-time-str)))
@@ -528,18 +528,17 @@ See`org-jira-get-issue-list'"
          (startDate (org-jira-get-from-org 'worklog 'startDate))
          (startDate (if startDate
                         startDate
-                      (org-read-date nil nil nil "Inputh when did you start")))
+                      (org-read-date nil nil nil "On what date did you start")))
          (startDate (org-jira-time-format-to-jira startDate))
          (comment (replace-regexp-in-string "^  " "" (org-jira-get-worklog-comment worklog-id)))
          (worklog `((comment . ,comment)
                     (timeSpent . ,timeSpent)
-                    (timeSpentInSeconds . 10)
-                    (startDate . ,startDate)))
+                    (started . ,startDate)))
          (worklog (if worklog-id
                       (cons `(id . ,(replace-regexp-in-string "^worklog-" "" worklog-id)) worklog)
                     worklog)))
     (if worklog-id
-        (jiralib-update-worklog worklog)
+        (jiralib-update-worklog issue-id worklog-id worklog)
       (jiralib-add-worklog-and-autoadjust-remaining-estimate issue-id startDate timeSpent comment))
     (org-jira-delete-current-worklog)
     (org-jira-update-worklogs-for-current-issue)))
@@ -633,7 +632,7 @@ See`org-jira-get-issue-list'"
                   (org-entry-put (point) "created" created)
                   (unless (string= created updated)
                     (org-entry-put (point) "updated" updated)))
-                (org-entry-put (point) "startDate" (org-jira-get-worklog-val 'startDate worklog))
+                (org-entry-put (point) "startDate" (org-jira-get-worklog-val 'started worklog))
                 (org-entry-put (point) "timeSpent" (org-jira-get-worklog-val 'timeSpent worklog))
                 (goto-char (point-max))
                 (insert (replace-regexp-in-string "^" "  " (or (cdr (assoc 'comment worklog)) ""))))))
