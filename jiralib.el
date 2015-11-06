@@ -45,9 +45,9 @@
 (require 'soap-client)
 (require 'url-parse)
 
-(defvar jira-user "***REMOVED***")
-(defvar jira-pass "***REMOVED***")
-(defvar jira-rest-url "https://***REMOVED***.atlassian.net/rest/api/2/")
+(defvar jira-user "cnixon")
+(defvar jira-pass "Mintel321")
+(defvar jira-rest-url "https://mintel.atlassian.net/rest/api/2/")
 
 (defun jiralib-get (resource &optional rest-args limit &rest args)
   (let ((url-request-method "GET")

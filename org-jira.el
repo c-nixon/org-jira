@@ -444,8 +444,7 @@ See`org-jira-get-issue-list'"
     (switch-to-buffer project-buffer)))
 
 (defun org-jira-write-issue (issue-id fields)
-  (let* ((issue-summary (cdr (assoc 'summary fields)))
-         (issue-headline issue-summary))
+  (let* ((issue-summary (cdr (assoc 'summary fields))))
 
     (org-jira-mode t)
     (widen)
@@ -453,7 +452,8 @@ See`org-jira-get-issue-list'"
     (goto-char (point-min))
     (save-restriction
       (org-jira-write-issue-header (org-find-entry-with-id issue-id)
-                                   (org-jira-get-issue-val 'status fields))
+                                   (org-jira-get-issue-val 'status fields)
+                                   issue-summary)
 
       ;; Set up issue Properties
       (mapc (lambda (entry)
@@ -466,9 +466,26 @@ See`org-jira-get-issue-list'"
       (org-jira-write-issue-headings '(description))
 
       (org-jira-update-comments-for-current-issue)
-      (org-jira-update-worklogs-for-current-issue))))
+      (org-jira-update-worklogs-for-current-issue)
+      )
+    (save-restriction
+      (mapc 'org-jira-handle-subtask (cdr (assoc 'subtasks fields))))))
 
-(defun org-jira-write-issue-header (issue-point status)
+(defun org-jira-handle-subtask (issue)
+  (let* ((subtask-id (cdr (assoc 'key issue)))
+         (subtask-fields (cdr(assoc 'fields issue)))
+         (subtask-point (org-find-entry-with-id subtask-id))
+         (parent-point (point))
+         (subtask-summary (cdr (assoc 'summary fields))))
+    (if subtask-point
+        (progn (goto-char subtask-point)
+               (ignore-errors (org-refile nil nil (list nil (buffer-file-name) nil parent-point))))
+      (org-jira-write-issue-header (org-find-entry-with-id subtask-id)
+                                   (org-jira-get-issue-val 'status fields)
+                                   subtask-summary)))
+  )
+
+(defun org-jira-write-issue-header (issue-point status issue-headline)
   (if (and issue-point (>= issue-point (point-min))
            (<= issue-point (point-max)))
       (progn
